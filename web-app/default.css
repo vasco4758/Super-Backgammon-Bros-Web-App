@@ -1,0 +1,495 @@
+:root {
+    /* Colors */
+    --color-background: #A1AEFF;
+    --color-border: #333;
+    --color-button-bg: #4c3bd1;
+    --color-button-hover: #66c;
+    --color-col1: #D065DE;
+    --color-col2: #F3A247;
+    --color-header-bg: #DE5818;
+    --color-header-text: #FFF;
+    --color-panel-bg: #1e1f3a;
+    --color-panel-border: #555;
+    --color-side-border: #DE5818;
+    --color-white: #FFF;
+
+    /* Sizes */
+    --board-width: 75%;
+    --column-gap: 1em;
+    --header-height: 80px;
+    --img-size: 35%;
+    --point-gap: 2px;
+    --right-border-width: 5em;
+    --shadow: 4px 4px 5px rgba(0, 0, 0, 0.7);
+    --side-border-width: 2em;
+    --title-font-size: 2.5em;
+}
+
+@font-face {
+    font-family: 'Mario Font';
+    src: url('assets/SuperMario256.ttf') format('truetype');
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    background-color: var(--color-background);
+    font-family: sans-serif;
+    height: 100%;
+    overflow: hidden;
+}
+
+header {
+    background: var(--color-header-bg);
+    color: var(--color-header-text);
+    font-family: 'Mario Font', sans-serif;
+    height: var(--header-height);
+    padding: 1em;
+    text-align: center;
+    text-shadow: var(--shadow);
+}
+
+#title {
+    font-size: var(--title-font-size);
+}
+
+/* Main Game Layout */
+main {
+    align-items: center;
+    display: flex;
+    height: calc(100% - var(--header-height));
+    justify-content: center;
+}
+
+/* Game Container splits board and panel */
+#game_container {
+    display: flex;
+    height: 100%;
+    width: 100%;
+}
+
+/* Backgammon Board */
+#backgammon_board {
+    background: var(--color-background);
+    border-right: 3px solid var(--color-border);
+    display: flex;
+    gap: var(--column-gap);
+    justify-content: center;
+    position: relative;
+    width: var(--board-width);
+}
+
+.column-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--column-gap);
+    justify-content: space-between;
+    width: 43%;
+}
+
+.column {
+    display: flex;
+    gap: var(--point-gap);
+    height: 45%;
+    padding-bottom: 2em;
+    padding-top: 2em;
+}
+
+.column.bottom .checker-stack {
+    justify-content: flex-end;
+}
+
+.column.bottom .point:nth-child(even)::before {
+    border-bottom-color: var(--color-col1);
+}
+
+.column.bottom .point:nth-child(odd)::before {
+    border-bottom-color: var(--color-col2);
+}
+
+.column.bottom .point::before {
+    border-bottom: 35vh solid;
+    bottom: 0;
+}
+
+.column.top .checker {
+    transform: rotate(180deg);
+}
+
+.column.top .point:nth-child(even)::before {
+    border-top-color: var(--color-col2);
+}
+
+.column.top .point:nth-child(odd)::before {
+    border-top-color: var(--color-col1);
+}
+
+.column.top .point::before {
+    border-top: 35vh solid;
+    top: 0;
+}
+
+.point {
+    align-items: center;
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    position: relative;
+}
+
+.point::before {
+    border-left: 2vw solid transparent;
+    border-right: 2vw solid transparent;
+    content: '';
+    height: 0;
+    left: 50%;
+    position: absolute;
+    transform: translateX(-50%);
+    width: 0;
+    z-index: 0;
+}
+
+/* Checker stack inside a point */
+.checker-stack {
+    align-items: center;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: flex-start;
+    position: absolute;
+    width: 100%;
+    z-index: 1;
+}
+
+.checker {
+    height: 40px;
+    margin: 1px 0;
+    object-fit: contain;
+    width: 40px;
+}
+
+.checker-stack.selected {
+    border-radius: 8px;
+    box-shadow:
+        inset 0 0 15px rgba(255, 255, 0, 0.7),
+        inset 0 0 8px rgba(255, 255, 0, 0.5),
+        inset 0 0 3px rgba(255, 255, 0, 0.3);
+    width: 40px;
+}
+
+/* Borders */
+.bottom-border,
+.top-border {
+    background-image: url('assets/brick.png');
+    flex-shrink: 0;
+    height: var(--side-border-width);
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+}
+
+.bottom-border {
+    background-color: var(--color-side-border);
+    bottom: 0;
+}
+
+.bar {
+    background-image: url('assets/brick.png');
+    flex-shrink: 0;
+    height: 100%;
+    width: var(--side-border-width);
+}
+
+#bar_area {
+    align-content: center;
+    height: 100%;
+    position: relative;
+}
+
+#bar_goomba,
+#bar_mario {
+    border-radius: 10px;
+    height: 40%;
+    position: relative;
+    width: 100%;
+}
+
+#bar_goomba {
+    border: 4px solid blue;
+}
+
+#bar_mario {
+    border: 4px solid red;
+}
+
+.left-border {
+    background-image: url('assets/brick.png');
+}
+
+
+.side-border {
+    height: 100%;
+    width: var(--side-border-width);
+}
+
+.right-border {
+    background-image: url('assets/flag_poles.png');
+    background-position: center var(--side-border-width);
+    background-repeat: no-repeat;
+    background-size: 100% calc(100% - 2*var(--side-border-width));
+    position: relative;
+    width: var(--right-border-width);
+}
+
+/* Flags and Poles */
+.flag {
+    background-size: cover;
+    bottom: 0;
+    height: 30px;
+    left: 50%;
+    position: absolute;
+    transform: translateX(-50%);
+    width: 30px;
+}
+
+#goomba_flag {
+    background-image: url('assets/flag_goomba.png');
+    bottom: 0%;
+}
+
+#mario_flag {
+    background-image: url('assets/flag_mario.png');
+    bottom: 0%;
+}
+
+#goomba_pole {
+    position: absolute;
+    right: 0%;
+    transform: rotate(180deg);
+    width: 65%;
+}
+
+#mario_pole {
+    bottom: 0%;
+    position: absolute;
+}
+
+.pole {
+    height: 24%;
+    margin: 4em 0;
+    position: relative;
+    width: 55%;
+}
+
+/* Player Panel */
+#player_panel {
+    background: var(--color-panel-bg);
+    color: var(--color-white);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 1em;
+}
+
+#center_panel {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1em;
+}
+
+#dice_and_button {
+    align-items: center;
+    display: flex;
+    gap: 1em;
+    justify-content: left;
+    margin-bottom: 0.5em;
+}
+
+.dice {
+    align-items: center;
+    display: none;
+    height: 50px;
+    object-fit: contain;
+    width: 50px;
+}
+
+.control-divider {
+    border: none;
+    border-top: 2px solid var(--color-panel-border);
+    margin: 0.5em 0;
+}
+
+.sidebar {
+    border-bottom: 2px solid var(--color-panel-border);
+    margin-bottom: 1em;
+    overflow: hidden;
+    padding-bottom: 0.5em;
+}
+
+.sidebar img {
+    border-radius: 10px;
+    height: auto;
+    margin: 0.5em 0;
+    width: var(--img-size);
+}
+
+.sidebar input {
+    font-weight: bold;
+    margin-bottom: 0.5em;
+    padding: 0.25em;
+    width: 100%;
+}
+
+button {
+    background: var(--color-button-bg);
+    border: none;
+    border-radius: 5px;
+    color: var(--color-white);
+    cursor: pointer;
+    font-size: 1em;
+    padding: 1em 1.5em;
+}
+
+button:hover {
+    background: var(--color-button-hover);
+}
+
+.player_info_row {
+    align-items: center;
+    display: flex;
+    gap: 1em;
+    margin-bottom: 0.25em;
+    margin-top: 0.25em;
+}
+
+.player_info_row img {
+    border-radius: 10px;
+    flex-shrink: 0;
+    height: auto;
+    width: var(--img-size);
+}
+
+.player_text_info {
+    color: var(--color-white);
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9em;
+    gap: 0.3em;
+}
+
+.hearts-bar {
+    display: flex;
+    justify-content: left;
+}
+
+.heart-slot {
+    flex: 0 0 auto;
+    max-height: 20px;
+    max-width: 20px;
+    object-fit: contain;
+    padding: 1px;
+}
+
+#instructions_window {
+    align-items: center;
+    background-color: rgba(0,0,0,0.8);
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    left: 0;
+    opacity: 0;
+    position: fixed;
+    top: 0;
+    transition: visibility 0s linear 0.3s, opacity 0.3s;
+    visibility: hidden;
+    width: 100%;
+    z-index: 999;
+}
+
+#instructions_window.show {
+    opacity: 1;
+    transition-delay: 0s;
+    visibility: visible;
+}
+
+#instructions_content {
+    background-color: var(--color-white);
+    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    font-size: 1em;
+    gap: 1em;
+    max-width: 900px;
+    padding: 2em 3em;
+    text-align: center;
+    width: 90%;
+}
+
+#instructions_content h2 {
+    font-family: 'Mario Font', sans-serif;
+    font-size: 2em;
+}
+
+#alert_window {
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    left: 0;
+    opacity: 0;
+    position: fixed;
+    top: 0;
+    transition: visibility 0s linear 0.3s, opacity 0.3s;
+    visibility: hidden;
+    width: 100%;
+    z-index: 999;
+}
+
+#alert_window.show {
+    opacity: 1;
+    transition-delay: 0s;
+    visibility: visible;
+}
+
+#alert_content {
+    background-color: var(--color-white);
+    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    font-size: 1em;
+    gap: 1em;
+    max-width: 600px;
+    padding: 2em 3em;
+    text-align: center;
+    width: 90%;
+}
+
+#alert_content h2 {
+    font-family: 'Mario Font', sans-serif;
+    font-size: 2em;
+}
+
+#close_alert_button {
+    background: var(--color-button-bg);
+    border: none;
+    border-radius: 5px;
+    color: var(--color-white);
+    cursor: pointer;
+    font-size: 1em;
+    padding: 1em 1.5em;
+}
+
+#close_alert_button:hover {
+    background: var(--color-button-hover);
+}

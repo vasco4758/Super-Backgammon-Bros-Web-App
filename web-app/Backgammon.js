@@ -1,0 +1,892 @@
+import R from "./ramda.js";
+
+/**
+ * @typedef {Array.<number>} Board
+ * The game board is a 24-slot array.
+ * Positive values = Mario checkers, negative = Goomba checkers.
+ */
+
+/**
+ * @typedef {Object} Bar
+ * @property {number} mario - Number of Mario checkers on the bar.
+ * @property {number} goomba - Number of Goomba checkers on the bar.
+ */
+
+/**
+ * @typedef {Object} BorneOff
+ * @property {number} mario - Number of Mario checkers borne off.
+ * @property {number} goomba - Number of Goomba checkers borne off.
+ */
+
+/**
+ * @typedef {Object} BoardState
+ * @property {Board} board - The main board array of 24 slots.
+ * @property {Bar} bar - The number of checkers each player has on the bar.
+ * @property {BorneOff} borne_off - The number of checkers
+ * each player has borne off.
+ */
+
+/**
+ * @typedef {"mario"|"goomba"} Player
+ * The players in the game.
+ */
+
+/**
+ * @typedef {Object} FirstPlayerResult
+ * @property {Player} first_player - The player who goes first.
+ * @property {Array.<number>} dice - The initial dice
+ * roll as a pair [die1, die2].
+ */
+
+/**
+ * @typedef {Object} GameOverResult
+ * @property {Player} winner - The player who won.
+ * @property {string} reason - The reason for the win.
+ * @property {number} score - The score awarded.
+ */
+
+/**
+ * Backgammon.js is a module to model and play "Super Backgammon Bros".
+ * @namespace Backgammon
+ * @requires module:ramda
+ * @author Vasco de Noronha
+ * @version 06/2025
+ */
+const Backgammon = Object.create(null);
+
+
+/**
+ * Rolls a die.
+ * @memberof Backgammon
+ * @function
+ * @returns Returns a random integer between 1 and 6, inclusive.
+ */
+const roll_die = function () {
+    return R.pipe(Math.random, R.multiply(6), Math.floor, R.inc)();
+};
+
+/**
+ * Rolls two dice.
+ * @memberof Backgammon
+ * @function
+ * @returns Returns an array of two integers, each between 1 and 6, inclusive.
+ */
+Backgammon.roll_two = function () {
+    return [roll_die(), roll_die()];
+};
+
+/**
+ * Swaps the dice order
+ * @memberof Backgammon
+ * @function
+ * @param {number} die1 The first die value.
+ * @param {number} die2 The second die value.
+ * @returns Returns an array of two integers swapped,
+ * each between 1 and 6, inclusive.
+ */
+Backgammon.swap_dice = function (die1, die2) {
+    return [die2, die1];
+};
+
+/**
+ * Checks for a double roll.
+ * @memberof Backgammon
+ * @function
+ * @param {number} die1 The first die value.
+ * @param {number} die2 The second die value.
+ * @returns Returns how many moves remaing the player can make.
+ * If a double is rolled, returns 4 moves remaining, otherwise 2.
+ */
+Backgammon.double_roll = function (die1, die2) {
+    if (die1 === die2) {
+        return 4;
+    } else {
+        return 2;
+    }
+};
+
+/**
+ * Determines who goes first at the start of the game.
+ * If a double is rolled, keeps rolling until a valid roll.
+ * Mario goes first if die1 > die2, Goomba if die2 > die1.
+ * @memberof Backgammon
+ * @function
+ * @returns {Object} { first_player: "mario" | "goomba", dice: [die1, die2] }
+ */
+Backgammon.determine_first_player = function () {
+    let die1;
+    let die2;
+    do {
+        [die1, die2] = Backgammon.roll_two();
+    } while (die1 === die2);
+
+    let first_player;
+    if (die1 > die2) {
+        first_player = "mario";
+    } else {
+        first_player = "goomba";
+    }
+
+    return {
+        first_player: first_player,
+        dice: [die1, die2]
+    };
+};
+
+/**
+ * Calculates the pip count for Mario or Goomba on a given board.
+ * @memberof Backgammon
+ * @function
+ * @param {Backgammon.Board} board The board array of 24 points.
+ * @param {"mario"|"goomba"} player The player to calculate pip count for.
+ * @returns {number} The total pip count for that player.
+ */
+Backgammon.pip_count_for_player = function (board, player) {
+    return board.reduce(function (acc, point_value, index) {
+        let distance = 0;
+        if (player === "mario") {
+            distance = index + 1;
+        } else {
+            distance = 24 - index;
+        }
+
+        let checker_count = 0;
+        if (player === "mario") {
+            if (point_value > 0) {
+                checker_count = point_value;
+            }
+        } else {
+            if (point_value < 0) {
+                checker_count = Math.abs(point_value);
+            }
+        }
+
+        return acc + distance * checker_count;
+    }, 0);
+};
+
+
+const pipe_spawn_points = [6, 8, 9, 10, 13, 14, 15, 17];
+
+const pipe = "pipe";
+
+/**
+ * Creates a new backgammon board.
+ * The board is represented as an array of 24 slots
+ * @memberof Backgammon
+ * @function
+ * @returns Returns a new backgammon board, represented as an array of 24 slots.
+ */
+Backgammon.new_board = function () {
+    const board = [
+        -2, 0, 0, 0, 0, 5,
+        0, 3, 0, 0, 0, -5,
+        5, 0, 0, 0, -3, 0,
+        -5, 0, 0, 0, 0, 2
+    ];
+
+    const available = pipe_spawn_points.filter((i) => board[i] === 0);
+
+    if (available.length > 0) {
+        const pipe_index = available[
+            Math.floor(
+                Math.random() * available.length
+            )
+        ];
+        board[pipe_index] = pipe;
+    }
+
+    return {
+        board,
+        bar: {mario: 0, goomba: 0},
+        borne_off: {mario: 0, goomba: 0}
+    };
+};
+
+/**
+ * Determines if all of a player's checkers are within their home board.
+ *
+ * A player has all checkers "in home" if none are on the bar and
+ * all checkers on the board are located within the player's home quadrant.
+ *
+ * @memberof Backgammon
+ * @function
+ * @param {board_state} board_state - The current board state.
+ * @param {"mario"|"goomba"} player - The player to check ("mario" or "goomba").
+ * @returns {boolean} True if all the player's
+ * checkers are in the home board, false otherwise.
+ */
+Backgammon.all_in_home = function (board_state, player) {
+    const board = board_state.board;
+    const bar = board_state.bar;
+
+    if (bar[player] > 0) {
+        return false;
+    }
+
+    const isMario = player === "mario";
+    let startIndex;
+    let endIndex;
+
+    if (isMario) {
+        startIndex = 0;
+        endIndex = 5;
+    } else {
+        startIndex = 18;
+        endIndex = 23;
+    }
+
+
+    const indices = R.range(0, board.length);
+
+    const totalCheckers = R.pipe(
+        R.map(function (i) {
+            return board[i];
+        }),
+        R.filter(function (val) {
+            return (
+                isMario
+                ? val > 0
+                : val < 0
+            );
+        }),
+        R.map(Math.abs),
+        R.sum
+    )(indices);
+
+
+    const homeSlice = board.slice(startIndex, endIndex + 1);
+
+    const homeCheckers = R.pipe(
+        R.map(function (val) {
+            return (
+                isMario
+                ? val
+                : -val
+            );
+        }),
+        R.filter(function (val) {
+            return val > 0;
+        }),
+        R.sum
+    )(homeSlice);
+
+
+    return totalCheckers > 0 && totalCheckers === homeCheckers;
+};
+
+/**
+ * Attempts to bear off a checker from a specific index using a given die.
+ * Only allows bearing off if the index matches the die or is lower,
+ * and all higher indexes are empty.
+ * @memberof Backgammon
+ * @function
+ * @param {Backgammon.BoardState} board_state The current board state.
+ * @param {number} from_index The index of the point to bear off from.
+ * @param {number} die_value The die value used to bear off (1-6).
+ * @param {"mario"|"goomba"} player The player bearing off.
+ * @returns {Backgammon.BoardState|null} Updated board state or null if invalid.
+ */
+Backgammon.remove_checker = function (
+    board_state,
+    from_index,
+    die_value,
+    player
+) {
+    const board = board_state.board;
+    const bar = board_state.bar;
+    const borne_off = Object.assign({}, board_state.borne_off);
+
+
+
+    const checker = board[from_index];
+    const is_mario = player === "mario";
+
+    if ((is_mario && checker <= 0) || (!is_mario && checker >= 0)) {
+        console.log("No checker to bear off from selected index:", from_index);
+        return null;
+    }
+
+    let die_index;
+    if (is_mario) {
+        die_index = die_value - 1;
+    } else {
+        die_index = 24 - die_value;
+    }
+
+    let is_exact = false;
+    if (from_index === die_index) {
+        is_exact = true;
+    }
+
+    let is_lower = false;
+    if (is_mario) {
+        if (from_index < die_index) {
+            is_lower = true;
+        }
+    } else {
+        if (from_index > die_index) {
+            is_lower = true;
+        }
+    }
+
+    if (!is_exact && !is_lower) {
+        console.log("Cannot bear off from this index with this die.");
+        return null;
+    }
+
+    let range;
+    if (is_mario) {
+        range = R.range(from_index + 1, 6);
+    } else {
+        range = R.range(18, from_index).reverse();
+    }
+
+    const all_clear = range.every(function (i) {
+        const val = board[i];
+        if (is_mario) {
+            return val <= 0;
+        }
+        return val >= 0;
+    });
+
+    if (!is_exact && !all_clear) {
+        console.log("Cannot bear off: higher checkers still present.");
+        return null;
+    }
+
+    let new_value;
+    if (is_mario) {
+        new_value = checker - 1;
+    } else {
+        new_value = checker + 1;
+    }
+
+    const new_board = R.update(from_index, new_value, board);
+
+    borne_off[player] += 1;
+
+    return {
+        board: new_board,
+        bar: bar,
+        borne_off: borne_off
+    };
+};
+
+
+/**
+ * Moves one checker for the given player by a dice roll.
+ * @memberof Backgammon
+ * @function
+ * @param {Backgammon.Board} board The current board array.
+ * @param {number} from_index The index of the point to move from.
+ * @param {number} die_value The value of the dice roll (1-6).
+ * @param {"mario"|"goomba"} player The player making the move.
+ * @returns {Backgammon.Board} The updated board array.
+ */
+Backgammon.move_checker = function (
+    board_state,
+    from_index,
+    die_value,
+    player
+) {
+    const board = board_state.board;
+    const bar = board_state.bar;
+
+    if (bar[player] > 0) {
+        console.log("Must re-enter from the bar before moving.");
+        return null;
+    }
+
+    let to_index;
+    if (player === "mario") {
+        to_index = from_index - die_value;
+    } else {
+        to_index = from_index + die_value;
+    }
+
+    const is_valid_index = function (index) {
+        return index >= 0 && index < 24;
+    };
+
+    if (!is_valid_index(to_index)) {
+        console.log("Move out of bounds → ignoring move.");
+        return null;
+    }
+
+    let opponent;
+    if (player === "mario") {
+        opponent = "goomba";
+    } else {
+        opponent = "mario";
+    }
+
+    const is_valid_move = function (pv) {
+        if (player === "mario") {
+            return pv > 0;
+        } else {
+            return pv < 0;
+        }
+    };
+
+    const is_opponent_checker = function (pv) {
+        if (opponent === "mario") {
+            return pv > 0;
+        } else {
+            return pv < 0;
+        }
+    };
+
+    const is_blot = function (pv) {
+        return is_opponent_checker(pv) && Math.abs(pv) === 1;
+    };
+
+    if (!is_valid_move(board[from_index])) {
+        console.log("No " + player + " checker to move from index", from_index);
+        return null;
+    }
+
+    if (is_opponent_checker(board[to_index]) && !is_blot(board[to_index])) {
+        console.log("Blocked by opponent stack.");
+        return null;
+    }
+
+    if (board[to_index] === "pipe") {
+        console.log("Cannot move to pipe location.");
+        return null;
+    }
+
+    const new_board = board.map(function (value, index) {
+        if (index === from_index) {
+            if (player === "mario") {
+                return value - 1;
+            } else {
+                return value + 1;
+            }
+        } else if (index === to_index) {
+            if (is_blot(board[to_index])) {
+                if (player === "mario") {
+                    return 1;
+                } else {
+                    return -1;
+                }
+            } else {
+                if (player === "mario") {
+                    return value + 1;
+                } else {
+                    return value - 1;
+                }
+            }
+        } else {
+            return value;
+        }
+    });
+
+    const new_bar = Object.assign({}, bar);
+    if (is_blot(board[to_index])) {
+        new_bar[opponent] += 1;
+    }
+
+    return {
+        board: new_board,
+        bar: new_bar,
+        borne_off: board_state.borne_off
+    };
+};
+
+/**
+ * Attempts to re-enter a checker from the bar
+ * onto the board using a given die roll.
+ * Can enter on an empty point, a point occupied by the player,
+ * or hit a single opponent blot.
+ * @memberof Backgammon
+ * @function
+ * @param {Backgammon.BoardState} board_state The current board state,
+ * including board, bar, and borne_off.
+ * @param {"mario"|"goomba"} player The player
+ * attempting to re-enter from the bar.
+ * @param {number} die The die value used to determine the entry point (1-6).
+ * @returns {Backgammon.BoardState|null} The updated board state if the
+ * move is valid; otherwise null.
+ */
+Backgammon.reenter_from_bar = function (board_state, player, die) {
+    let entry_point;
+    if (player === "mario") {
+        entry_point = 24 - die;
+    } else {
+        entry_point = die - 1;
+    }
+
+    const point_value = board_state.board[entry_point];
+    const isMario = player === "mario";
+    let opponent;
+    if (isMario) {
+        opponent = "goomba";
+    } else {
+        opponent = "mario";
+    }
+
+    const is_own_point = (
+        (isMario && point_value >= 0) ||
+        (!isMario && point_value <= 0)
+    );
+    const is_empty = point_value === 0;
+    const is_opponent_blot = (
+        (isMario && point_value === -1) ||
+        (!isMario && point_value === 1)
+    );
+
+    if (is_empty || is_own_point || is_opponent_blot) {
+        let new_board_value;
+        let new_bar = Object.assign({}, board_state.bar);
+
+        if (is_opponent_blot) {
+            new_board_value = (
+                isMario
+                ? 1
+                : -1
+            );
+            new_bar[opponent] += 1;
+        } else {
+            new_board_value = point_value + (
+                isMario
+                ? 1
+                : -1
+            );
+        }
+
+        new_bar[player] -= 1;
+
+        const new_board = R.update(
+            entry_point,
+            new_board_value,
+            board_state.board
+        );
+
+        return Object.assign({}, board_state, {
+            board: new_board,
+            bar: new_bar
+        });
+    }
+
+    return null;
+};
+
+
+/**
+ * Checks if the game is over and returns the winner and score.
+ * A player wins either by reducing the opponent's hearts to 0,
+ * or by bearing off all their checkers.
+ *
+ * - KO win (1 point): opponent has 0 hearts.
+ * - Bear-off:
+ *   - 3 points: opponent has checkers in home or on bar (backgammon)
+ *   - 2 points: opponent has not borne off any checkers (gammon)
+ *   - 1 point: normal win
+ *
+ * @memberof Backgammon
+ * @function
+ * @param {Backgammon.BoardState} board_state The current board state.
+ * @param {mario_hearts} remaing hearts for Mario.
+ * @param {goomba_hearts} remaing hearts for Goomba.
+ * @returns {null|{ winner: "mario"|"goomba", reason: string, score: number }}
+ */
+Backgammon.check_game_over = function (
+    board_state,
+    mario_hearts,
+    goomba_hearts
+) {
+    const board = board_state.board;
+    const bar = board_state.bar;
+    const borne_off = board_state.borne_off || {mario: 0, goomba: 0};
+
+    const mario_checkers = bar.mario + R.pipe(
+        R.filter((val) => val > 0),
+        R.sum
+    )(board);
+
+    const goomba_checkers = bar.goomba + R.pipe(
+        R.filter((val) => val < 0),
+        R.map(Math.abs),
+        R.sum
+    )(board);
+
+    if (goomba_hearts === 0) {
+        return {
+            winner: "mario",
+            reason: "KO",
+            score: 1
+        };
+    }
+
+    if (mario_hearts === 0) {
+        return {
+            winner: "goomba",
+            reason: "KO",
+            score: 1
+        };
+    }
+
+    if (mario_checkers === 0) {
+        const opponent_home_has_checkers = (
+            board.slice(0, 6).some((val) => val < 0)
+        );
+        const opponent_on_bar = bar.goomba > 0;
+        const opponent_has_borne_off = borne_off.goomba > 0;
+        console.log(borne_off.goomba);
+        let score;
+        if (
+            !opponent_has_borne_off &&
+            (opponent_on_bar || opponent_home_has_checkers)
+        ) {
+            score = 3;
+        } else if (!opponent_has_borne_off) {
+            score = 2;
+        } else {
+            score = 1;
+        }
+
+        return {
+            winner: "mario",
+            reason: "bear-off",
+            score: score
+        };
+    }
+
+    if (goomba_checkers === 0) {
+        const opponent_home_has_checkers2 = (
+            board.slice(18, 24).some((val) => val > 0)
+        );
+        const opponent_on_bar2 = bar.mario > 0;
+        const opponent_has_borne_off2 = borne_off.mario > 0;
+        console.log(borne_off.mario);
+        let score2;
+        if (
+            !opponent_has_borne_off2 &&
+            (opponent_on_bar2 || opponent_home_has_checkers2)
+        ) {
+            score2 = 3;
+        } else if (!opponent_has_borne_off2) {
+            score2 = 2;
+        } else {
+            score2 = 1;
+        }
+
+        return {
+            winner: "goomba",
+            reason: "bear-off",
+            score: score2
+        };
+    }
+
+    return null;
+};
+
+/**
+ * Generates all legal moves for a player
+ * given the current board state and dice.
+ * Includes re-entry from bar and bearing off.
+ * @memberof Backgammon
+ * @function
+ * @param {Backgammon.BoardState} board_state The current board state.
+ * @param {"mario"|"goomba"} player The player whose moves to calculate.
+ * @param {number[]} dice The current available dice [d1, d2].
+ * @returns {Array} An array of legal move objects:
+ *    { from: index or "bar", to: index or "borne_off", die: number }
+ */
+Backgammon.legal_moves_for_player = function (board_state, player, dice) {
+    const is_mario = player === "mario";
+    const direction = (
+        is_mario
+        ? -1
+        : 1
+    );
+    const board = board_state.board;
+    const bar = board_state.bar;
+
+    const in_bar = bar[player] > 0;
+
+    function movesForDie(die) {
+        if (!in_bar) {
+            return [];
+        }
+
+        const entry_point = (
+            is_mario
+            ? 24 - die
+            : die - 1
+        );
+        const point_value = board[entry_point];
+
+        const is_own_point = (
+            (is_mario && point_value >= 0) ||
+            (!is_mario && point_value <= 0)
+        );
+        const is_empty = point_value === 0;
+        const is_opponent_blot = (
+            (is_mario && point_value === -1) ||
+            (!is_mario && point_value === 1)
+        );
+
+        return (
+            (is_empty || is_own_point || is_opponent_blot)
+            ? [{from: "bar", to: entry_point, die}]
+            : []
+        );
+    }
+
+    const reentry_moves = R.chain(movesForDie, dice);
+    if (in_bar) {
+        return reentry_moves;
+    }
+
+    const piece_indices = R.pipe(
+        R.addIndex(R.map)(function (val, i) {
+            return {index: i, value: val};
+        }),
+        R.filter(function (p) {
+            return (
+                is_mario
+                ? p.value > 0
+                : p.value < 0
+            );
+        }),
+        R.map(R.prop("index"))
+    )(board);
+
+    const regular_moves = R.chain(function (from) {
+        return R.chain(function (die) {
+            const to = from + direction * die;
+            if (to < 0 || to >= 24) {
+                return [];
+            }
+
+            const point_value = board[to];
+            const is_blocked = (
+                is_mario
+                ? point_value < -1
+                : point_value > 1
+            );
+
+            if (!is_blocked && point_value !== "pipe") {
+                return [{from: from, to: to, die: die}];
+            }
+            return [];
+        }, dice);
+    }, piece_indices);
+
+    const can_bear_off = Backgammon.all_in_home(board_state, player);
+
+    const bearing_off_moves = (
+        can_bear_off
+        ? R.chain(function (die) {
+            const direction_config = (
+                is_mario
+                ? {
+                    range: R.range(0, die).reverse(),
+                    check_checker: function (val) {
+                        return val > 0;
+                    },
+                    range_behind: function (from) {
+                        return R.range(0, from);
+                    },
+                    behind_clear: function (i) {
+                        return board[i] <= 0;
+                    }
+                }
+                : {
+                    range: R.range(24 - die, 24),
+                    check_checker: function (val) {
+                        return val < 0;
+                    },
+                    range_behind: function (from) {
+                        return R.range(from + 1, 24);
+                    },
+                    behind_clear: function (i) {
+                        return board[i] >= 0;
+                    }
+                }
+            );
+
+            return R.pipe(
+                R.map(function (from) {
+                    let checker = board[from];
+                    if (direction_config.check_checker(checker)) {
+                        let indices = direction_config.range_behind(from);
+                        let clear = R.all(
+                            direction_config.behind_clear,
+                            indices
+                        );
+                        if (clear) {
+                            return {from: from, to: "borne_off", die: die};
+                        }
+                    }
+                    return null;
+                }),
+                R.filter(R.identity)
+            )(direction_config.range);
+        }, dice)
+        : []
+    );
+
+    return [].concat(reentry_moves, regular_moves, bearing_off_moves);
+};
+
+/**
+ * Checks if any remaining dice values are still playable.
+ * If not, sets moves_remaining to 0.
+ *
+ * @param {number|null} die1 - First die.
+ * @param {number|null} die2 - Second die.
+ * @param {number} used_die - The die that was just used.
+ * @param {number} moves_remaining - The number of remaining moves.
+ * @param {BoardState} board_state - The current board state.
+ * @param {Player} player - The current player.
+ * @returns {number} Updated moves_remaining (0 if no playable moves).
+ */
+Backgammon.check_remaining_dice_playability = function (
+    die1,
+    die2,
+    used_die,
+    moves_remaining,
+    board_state,
+    player
+) {
+    if (die1 === null || die2 === null) {
+        return moves_remaining;
+    }
+
+    let remaining_dice = [];
+
+    if (die1 === die2) {
+        remaining_dice = R.times(function () {
+            return die1;
+        }, moves_remaining);
+    } else if (moves_remaining === 2) {
+        remaining_dice = [die1, die2];
+    } else if (moves_remaining === 1) {
+        remaining_dice = (
+            (used_die === die1)
+            ? [die2]
+            : [die1]
+        );
+    }
+
+    let playable_dice = remaining_dice.filter(function (die) {
+        return Backgammon.legal_moves_for_player(
+            board_state,
+            player,
+            [die]
+        ).length > 0;
+    });
+
+    if (playable_dice.length === 0) {
+        console.log("No playable moves left for:", player);
+        return 0;
+    }
+
+    return moves_remaining;
+};
+
+
+export default Object.freeze(Backgammon);

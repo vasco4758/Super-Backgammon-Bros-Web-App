@@ -1,0 +1,228 @@
+<!-- In HTML Comments are written like this -->
+<!-- They can all be removed for your apps -->
+<!doctype html> <!-- This first line tells browsers to expect modern standard html 5 -->
+<html lang="en-gb"> <!-- This is indicates the page is written in British English, useful for accessibility -->
+<meta charset="utf-8"> <!-- This indicates how the file is encoded. utf-8 is standard -->
+<title>Super Backgammon Bros</title> <!-- All pages need a title, this will be displayed in the browser's title bar -->
+<link rel="stylesheet" href="default.css"> <!-- Import style sheet – default.css -->
+<link rel="icon" href="./assets/mario_profile.png"> <!-- Import 'Favorites Icon' – favicon.png -->
+<script type="module" src="main.js"></script> <!-- Load the main script. Must be type="module". Have only one of these -->
+
+<header>
+    <h1 id="title">Super Backgammon Bros</h1>
+</header>
+
+ <main tabindex="-1">
+    <div id="game_container">
+        <div id="backgammon_board">
+            <div class="side-border left-border"></div> 
+            <div class="top-border"></div>
+            <div class="column-group">
+                <div class="column top">
+                    <div class="point col1" data-index="12">
+                        <div class="checker-stack" data-point="12"></div>
+                    </div>
+                    <div class="point col2" data-index="13">
+                        <div class="checker-stack" data-point="13"></div>
+                    </div>
+                    <div class="point col1" data-index="14">
+                        <div class="checker-stack" data-point="14"></div>
+                    </div>
+                    <div class="point col2" data-index="15">
+                        <div class="checker-stack" data-point="15"></div>
+                    </div>
+                    <div class="point col1" data-index="16">
+                        <div class="checker-stack" data-point="16"></div>
+                    </div>
+                    <div class="point col2" data-index="17">
+                        <div class="checker-stack" data-point="17"></div>
+                    </div>
+                </div>
+                <div class="column bottom">
+                    <div class="point col2" data-index="11">
+                        <div class="checker-stack" data-point="11"></div>
+                    </div>
+                    <div class="point col1" data-index="10">
+                        <div class="checker-stack" data-point="10"></div>
+                    </div>
+                    <div class="point col2" data-index="9">
+                        <div class="checker-stack" data-point="9"></div>
+                    </div>
+                    <div class="point col1" data-index="8">
+                        <div class="checker-stack" data-point="8"></div>
+                    </div>
+                    <div class="point col2" data-index="7">
+                        <div class="checker-stack" data-point="7"></div>
+                    </div>
+                    <div class="point col1" data-index="6">
+                        <div class="checker-stack" data-point="6"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bar" id="bar_area">
+                <div id="bar_goomba" class="checker-stack bar-stack goomba-bar"></div>
+                <div id="bar_mario" class="checker-stack bar-stack mario-bar"></div>
+            </div>
+
+            <div class="column-group">
+                <div class="column top">
+                    <div class="point col1" data-index="18">
+                        <div class="checker-stack" data-point="18"></div>
+                    </div>
+                    <div class="point col2" data-index="19">
+                        <div class="checker-stack" data-point="19"></div>
+                    </div>
+                    <div class="point col1" data-index="20">
+                        <div class="checker-stack" data-point="20"></div>
+                    </div>
+                    <div class="point col2" data-index="21">
+                        <div class="checker-stack" data-point="21"></div>
+                    </div>
+                    <div class="point col1" data-index="22">
+                        <div class="checker-stack" data-point="22"></div>
+                    </div>
+                    <div class="point col2" data-index="23">
+                        <div class="checker-stack" data-point="23"></div>
+                    </div>
+                </div>
+                <div class="column bottom">
+                    <div class="point col2" data-index="5">
+                        <div class="checker-stack" data-point="5"></div>
+                    </div>
+                    <div class="point col1" data-index="4">
+                        <div class="checker-stack" data-point="4"></div>
+                    </div>
+                    <div class="point col2" data-index="3">
+                        <div class="checker-stack" data-point="3"></div>
+                    </div>
+                    <div class="point col1" data-index="2">
+                        <div class="checker-stack" data-point="2"></div>
+                    </div>
+                    <div class="point col2" data-index="1">
+                        <div class="checker-stack" data-point="1"></div>
+                    </div>
+                    <div class="point col1" data-index="0">
+                        <div class="checker-stack" data-point="0"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-border"></div> 
+            <div class="side-border right-border">
+                <div id="goomba_pole" class="pole">
+                    <div id="goomba_flag" class="flag"></div>
+                </div>
+                <div id="mario_pole" class="pole">
+                    <div id="mario_flag" class="flag"></div>
+                </div>
+            </div>
+        </div>  
+
+        <!-- Player Info Panel (Right) -->
+        <div id="player_panel">
+            <aside id="goomba_player" class="sidebar" aria-label="Goomba Player Info">
+                <div class="player">
+                    <input id="away_name" aria-label="Away player name" value="Player 1">
+                </div>
+                <div class="game_info">
+                    <div class="player_info_row">
+                        <img id="goomba_player_type_image" src="./assets/goomba_profile.png" alt="Goomba">
+                        <div class="player_text_info">
+                            <div id="goomba_player_type">
+                                <strong>Goomba</strong>
+                            </div>
+                            <div id="goomba_ready">Wait your turn!</div>
+                            <div class="score">
+                                <strong>Current Score:</strong>
+                                <span id="goomba_score">0</span>
+                            </div>
+                            <div class="pip_count">
+                                <strong>Pip Count:</strong>
+                                <span id="goomba_pip">167</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="goomba_hearts" class="hearts-bar"></div>
+                </div>
+            </aside>
+            
+            <div id="center_panel" aria-label="Dice and Controls">
+                <div id="dice_and_button">
+                    <button id="roll_dice_button">Roll Dice</button>
+                    <img id="dice_image_1" class="dice" src="" alt="Dice 1" />
+                    <img id="dice_image_2" class="dice" src="" alt="Dice 2" />
+                </div>
+                <hr class="control-divider" />
+            </div>
+
+            <aside id="mario_player" class="sidebar" aria-label="Mario Player Info">
+                <div class="player">
+                    <input id="home_name" aria-label="Home player name" value="Player 2">
+                </div>
+                <div class="game_info">
+                    <div class="player_info_row">
+                        <img id="mario_player_type_image" src="./assets/mario_profile.png" alt="Mario">
+                        <div class="player_text_info">
+                            <div id="mario_player_type">
+                                <strong>Mario</strong>
+                            </div>
+                            <div id="mario_ready">You're up!</div>
+                            <div class="score">
+                                <strong>Current Score:</strong>
+                                <span id="mario_score">0</span>
+                            </div>
+                            <div class="pip_count">
+                                <strong>Pip Count:</strong>
+                                <span id="mario_pip">167</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="mario_hearts" class="hearts-bar"></div>
+                </div>
+            </aside>
+            <button id="instructions_button">Instructions</button>
+        </div>
+    </div>
+    <div id="instructions_window" class="hidden">
+        <div id="instructions_content">
+            <h2>How to Play</h2>
+
+            <p>Each player moves their 15 checkers (Marios or Goombas) around the board in opposite directions.</p>
+
+            <p>The board is divided into four quadrants, with each player having a home board and an outer board.</p>
+
+            <p>Roll two dice to see how many points (pips) you can move your checkers. The left dice plays first, to swap the order click on the dice.</p>
+
+            <p>You can move one checker per die or split the roll across multiple checkers. Move the checkers by clicking on the checker stack.</p>
+
+            <p>A point with two or more of your opponent's checkers is blocked and cannot be landed on.</p>
+
+            <p>A lone opponent checker can be hit and sent to the bar; it must re-enter the board before you make other moves.</p>
+
+            <p>Your goal is to move all your checkers into your home board and then bear them off, bringing the flag to the top of the pole.</p>
+
+            <p>The first player to bear off all their checkers, or to eat the opponent's checkers 5 times and make them lose all their hearts, wins the game!</p>
+
+            <p>Be careful to avoid the pipe, that triangle cannot be used during the entire game.</p>
+
+            <hr>
+
+            <h2>Keyboard Controls</h2>
+
+            <p>
+            Press <strong>R</strong> to roll the dice, <strong>S</strong> to swap dice, <strong>I</strong> to toggle instructions, use the <strong>left and right arrow keys</strong> to navigate between checker stacks, and press <strong>Enter</strong> or <strong>Space</strong> to move a checker from the selected stack.
+            </p>
+            <button id="close_instructions_button">Close</button>
+        </div>
+    </div>
+    <audio id="mario_theme_audio" src="./assets/Theme_song.mp3" loop></audio>
+    <div id="alert_window" class="hidden">
+        <div id="alert_content">
+            <h2>Game Over</h2>
+            <p id="alert_message">This is an alert message!</p>
+            <button id="close_alert_button">OK</button>
+        </div>
+    </div>
+</main>
+
+</html>
